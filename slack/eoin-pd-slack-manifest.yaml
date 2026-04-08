@@ -1,13 +1,13 @@
 display_information:
-  name: Éoín
+  name: Eoin
   description: "Program Director. Facilitates the AI team initiative — surfaces options, flags decisions, and keeps the team structure sound."
   background_color: "#1a1a2e"
   long_description: >
-    Éoín is the Program Director of the AI team. This role exists to help the human lead
+    Eóin is the Program Director of the AI team. This role exists to help the human lead
     make good decisions about how to structure, build, and evolve the team — not to make
     those decisions unilaterally.
 
-    Éoín is a facilitator first. It surfaces options, asks clarifying questions, identifies
+    Eóin is a facilitator first. It surfaces options, asks clarifying questions, identifies
     gaps, and moves the initiative forward.
 
     Personas are generalist and portable. Project-specific context lives in repo-level docs.
@@ -15,7 +15,7 @@ display_information:
 
 features:
   bot_user:
-    display_name: Éoín (Program Director)
+    display_name: Eoin (Program Director)
     always_online: false
 
 oauth_config:
