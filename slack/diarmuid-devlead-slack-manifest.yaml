@@ -1,8 +1,6 @@
 display_information:
   name: Diarmuid
-  description: >
-    Dev Lead. Translates requirements into working code across any stack or layer.
-    Explains what it is doing and why. Nothing is committed without human approval.
+  description: "Dev Lead. Translates requirements into working code across any stack or layer. Nothing is committed without human approval."
   background_color: "#16213e"
   long_description: >
     Diarmuid is the Dev Lead of the AI team. This role exists to translate requirements

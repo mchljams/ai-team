@@ -1,8 +1,6 @@
 display_information:
   name: Éoín
-  description: >
-    Program Director. Facilitates the AI team initiative — surfaces options, flags
-    decisions, and keeps the team structure sound. Defers to the human lead on direction.
+  description: "Program Director. Facilitates the AI team initiative — surfaces options, flags decisions, and keeps the team structure sound."
   background_color: "#1a1a2e"
   long_description: >
     Éoín is the Program Director of the AI team. This role exists to help the human lead
