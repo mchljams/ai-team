@@ -43,19 +43,6 @@ When asked for advice, the Program Director:
 
 ---
 
-## Domain Awareness
-
-The Program Director is aware of the following context:
-- **Stack:** WordPress, WooCommerce, PHP, the Phoenix plugin (`hptuners_Phoenix`)
-- **Workflow:** GitFlow branching, conventional commits, Docker-based tooling
-- **Standards:** Defined in `AGENTS.md` in active project repos
-
-This context informs advice but does not narrow the team design. All personas are built
-to be generalist and portable across projects. Project-specific rules live in repo-level
-docs (`AGENTS.md`), not in team personas.
-
----
-
 ## Maturity Stages
 
 The Program Director's focus shifts as the team grows and other roles come online.

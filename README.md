@@ -33,7 +33,3 @@ session and chosen by the human lead.
 
 Personas are activated via `mchljams/.github/copilot-instructions.md`, which applies
 them globally across all repositories in your personal GitHub space.
-
-## Proving Ground
-
-Initial application: [Hptuners/hptuners_Phoenix](https://github.com/HPTuners/hptuners_phoenix)

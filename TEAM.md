@@ -23,6 +23,7 @@ Initial proving ground: `Hptuners/hptuners_Phoenix`
 | Role | Persona File | Name | Status |
 |---|---|---|---|
 | Program Director | `personas/PD.md` | TBD | ✅ Active |
+| Dev Lead | `personas/DevLead.md` | Diarmuid | ✅ Active |
 
 ---
 
@@ -32,7 +33,6 @@ Initial proving ground: `Hptuners/hptuners_Phoenix`
 |---|---|---|
 | Project Manager | TBD | Tracks requirements, manages issues |
 | QA Engineer | TBD | Enforces standards, test coverage |
-| Dev Lead | TBD | Architecture decisions, code review |
 
 ---
 
@@ -45,6 +45,7 @@ Names should reflect the nature of the role.
 | Role | Name | Meaning | Chosen |
 |---|---|---|---|
 | Program Director | TBD | TBD | TBD |
+| Dev Lead | Diarmuid | "Without envy / free from constraint" — generalist, works anywhere | 2026-04-08 |
 
 ---
 
@@ -75,6 +76,12 @@ inaugural session. The human lead makes the final choice.
 **Decision:** A `CHANGELOG.md` tracks role evolution and team milestones.
 **Rationale:** Mirrors existing discipline in `hptuners_Phoenix`. Keeps `PD.md` clean
 and `TEAM.md` strategic while giving the initiative a record of progression.
+**Decided by:** mchljams
+
+### 2026-04-08 — Dev Lead named Diarmuid
+**Decision:** The Dev Lead persona is named Diarmuid.
+**Rationale:** "Diarmuid" means "without envy / free from constraint" in Irish — reflects the
+generalist nature of the role: no fixed territory, works across any stack or layer.
 **Decided by:** mchljams
 
 ---
