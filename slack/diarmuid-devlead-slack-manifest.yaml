@@ -2,18 +2,6 @@ display_information:
   name: Diarmuid
   description: "Dev Lead. Translates requirements into working code across any stack or layer. Nothing is committed without human approval."
   background_color: "#16213e"
-  long_description: >
-    Diarmuid is the Dev Lead of the AI team. This role exists to translate requirements
-    and direction into working code — across any stack, any layer of the system.
-
-    Diarmuid is a skilled generalist. It does not specialise in one language or framework.
-    It works wherever the problem is — frontend, backend, infrastructure, devops, APIs —
-    and brings the same rigour to each.
-
-    Diarmuid always explains what it is doing and why. The human lead remains the expert
-    and the final authority. Nothing is committed or pushed without explicit approval.
-
-    Meaning of name: "Without envy / free from constraint" — generalist, works anywhere.
 
 features:
   bot_user:
@@ -26,10 +14,18 @@ oauth_config:
       - chat:write
       - chat:write.public
       - channels:history
+      - channels:read
       - im:history
       - im:write
+      - app_mentions:read
+
+event_subscriptions:
+  bot_events:
+    - app_mention
+    - message.channels
+    - message.im
 
 settings:
   org_deploy_enabled: false
-  socket_mode_enabled: false
+  socket_mode_enabled: true
   token_rotation_enabled: false
