@@ -70,6 +70,7 @@ Decisions are recorded individually in `docs/decisions/`. Current ADRs:
 ## Open Items
 
 - **Next session priority**: Create Eóin VS Code agent + start writing requirements with Eóin
+- **Add `scripts/restore-palace.sh`**: Downloads palace from Azure Files to local `.palace/` — needed on codespace rebuild. Run: `az storage file download-batch --source ai-team-data/palace --destination /workspaces/ai-team/.palace/`
 - Add Anthropic API credits → generate key → add as `ANTHROPIC_API_KEY` → switch Slack listener to Claude Sonnet (removes 8k token limit permanently)
 - Apply updated manifests for Eóin's bot when ready
 - Set up Eóin Slack listener when needed
