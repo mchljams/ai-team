@@ -7,7 +7,7 @@ Dev Lead session memory. Updated at the end of each working session.
 ## Current Status
 
 **Date:** 2026-04-10
-**Phase:** VS Code Diarmuid agent created — primary interface established
+**Phase:** ADR structure in place, palace optimised, ready for Eóin + requirements work
 
 ---
 
@@ -33,7 +33,12 @@ Dev Lead session memory. Updated at the end of each working session.
 - Planning Azure persistence stack (see Key Decisions and Open Items)
 - **v7 deployed**: Fixed 413 token overflow — session notes truncated to last 4000 chars, history limit 20→8, palace recall reduced
 - **Diarmuid VS Code agent created**: `.github/agents/Diarmuid.agent.md` — select from agent picker to use Diarmuid as primary interface in VS Code
-- Palace re-mined to 87 drawers and synced to Azure Files
+- Palace reset and re-mined to 105 drawers — ADRs in `documentation` room, properly indexed
+- `docs/requirements/` placeholder created — ready for Eóin's output
+- `mempalace.yaml` auto-configured with `documentation` and `planning` rooms
+- `entities.json` updated, `.devcontainer/devcontainer.json` committed
+- Azure Files palace synced — Slack Diarmuid picks up all ADR content on next restart
+- Everything committed and pushed — `feat/mcp-github-tools` branch clean
 - **COMPLETED: Azure Container Apps deployment** — Diarmuid is now always-on in Azure
   - Resource group: `ai-team-rg` (eastus)
   - Storage account: `aiteamstorage001`, Azure Files share: `ai-team-data` (mounted at `/data`)
