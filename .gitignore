@@ -3,3 +3,6 @@ scripts/test-*.sh
 
 # MemPalace ChromaDB storage (re-mineable from source)
 .palace/
+
+# Platform binaries (downloaded at setup time)
+bin/
