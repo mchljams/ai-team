@@ -272,6 +272,20 @@ async def main():
             mcp_session = session
 
             tools_result = await session.list_tools()
+            # GitHub Models free tier has an 8000-token request limit.
+            # Tool schemas are token-heavy — only expose the most useful subset.
+            ALLOWED_TOOLS = {
+                "list_pull_requests",
+                "get_pull_request",
+                "create_pull_request",
+                "create_branch",
+                "push_files",
+                "get_file_contents",
+                "list_issues",
+                "create_issue",
+                "add_issue_comment",
+                "search_code",
+            }
             openai_tools = [
                 {
                     "type": "function",
@@ -282,8 +296,9 @@ async def main():
                     },
                 }
                 for t in tools_result.tools
+                if t.name in ALLOWED_TOOLS
             ]
-            print(f"MCP ready — {len(openai_tools)} GitHub tools available")
+            print(f"MCP ready — {len(openai_tools)} GitHub tools available (filtered from {len(tools_result.tools)})")
             print("Diarmuid listener starting (Socket Mode + GitHub Models + MCP + MemPalace)...")
 
             handler = AsyncSocketModeHandler(app, SLACK_APP_TOKEN)
