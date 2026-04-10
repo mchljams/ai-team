@@ -50,33 +50,22 @@ Dev Lead session memory. Updated at the end of each working session.
   - Palace (83 drawers, 3.1MB) uploaded to Azure Files share at `ai-team-data/palace`
   - v6 startup confirmed: palace copied, `⚡️ Bolt app is running!`
 
-## Key Decisions Made This Session
+## Key Decisions
 
-- **Slack manifest editor**: Slack's YAML editor has quirks — use JSON tab or configure via sidebar directly
-- **Socket Mode**: Configured via Settings → Socket Mode in Slack dashboard before manifest will accept it
-- **Event subscriptions**: `app_mention`, `message.channels`, `message.im` added via sidebar, then reinstall
-- **MemPalace over flat session notes**: Palace is the deep searchable layer; session notes are the fast always-fresh layer — both kept for now
-- **GPT-4o over Claude**: Anthropic API requires paid credits (separate from Claude.ai subscription). Deferred — using GitHub Models free tier. Next step to become "the same Diarmuid" is to add Anthropic API credits and switch the listener to Claude 3.5 Sonnet
-- **Persistent Diarmuid roadmap**: Stage 1 (done) = palace + session notes; Stage 2 = SQLite conversation history; Stage 3 = Fly.io always-on; Stage 4 = unified backend
-- **Azure over Fly.io**: Switched target deployment from Fly.io to Azure Container Apps — better fit for persistent volume (Azure Files) to keep palace and conversation history alive across restarts/sleeps
-- **Azure persistence stack**:
-  - Azure Container Apps — always-on listener
-  - Azure Files share — mounted volume for `.palace/` (ChromaDB) and `conversations.db` (SQLite)
-  - Container Apps built-in secrets — for Slack tokens, GitHub PAT
-  - Conversation history: SQLite on shared volume (replaces in-memory `defaultdict`)
-- **Lost context problem**: Codespace sleep kills both the listener process and in-memory conversation history. Azure deployment solves this permanently.
+Decisions are recorded individually in `docs/decisions/`. Current ADRs:
 
-- **VS Code is the primary interface for doing work**: Slack is for async/away status checks only. VS Code Diarmuid agent has full tool access, no token limits, and reads session notes at start of each session for full context continuity.
-- **MemPalace is a snapshot index, not a live journal**: `mempalace mine` reads files and builds a searchable vector index. It does not passively record conversations. It only knows what was in files at the time of last `mine` run. Sessions notes + periodic mine is the right pattern.
-- **Session end convention**: Say "wrap up" — Diarmuid updates session notes, re-mines palace, uploads to Azure Files, commits. This is what makes the next session start clean.
-- **SMB incompatibility is broader than SQLite**: ChromaDB also fails on Azure Files SMB (lock patterns during search). All runtime file I/O (SQLite + ChromaDB) must use `/tmp`. Palace is treated as read-only at runtime — copied from Azure Files to `/tmp` at startup, never written back.
-- **`start.sh` pattern**: Entrypoint script copies palace from `/data/palace` (Azure Files) → `/tmp/palace`, sets `MEMPALACE_PALACE_PATH=/tmp/palace`, then execs the listener. Solves SMB locking for ChromaDB permanently.
-- **ChromaDB embedding model pre-warm**: `all-MiniLM-L6-v2` (79MB) must be baked into Docker image — add `RUN python3 -c "from chromadb.utils.embedding_functions import DefaultEmbeddingFunction; DefaultEmbeddingFunction()([\"\"])"` to Dockerfile. Without this it downloads on every container restart.
-- **Palace sync flow**: Local `mempalace mine` → upload to Azure Files with `az storage file upload-batch` → next container restart picks it up automatically via `start.sh` copy.
-- **SQLite on Azure Files — incompatible**: SMB file locking breaks SQLite. Solution: SQLite in `/tmp` (instance-local for session history), palace on Azure Files (persistent long-term memory). This is the right split.
-- **Azure image tagging**: Always use versioned tags (`:v1`, `:v2` etc.) not just `:latest` — Container Apps caches `latest` and won't pull a new image without a tag change.
-- **ACR + managed identity**: Container App system identity needs `AcrPull` role assigned on the registry before deployment will succeed.
-- **Resource provider registration**: Fresh Azure free trial needs all providers registered manually (`Microsoft.Storage`, `Microsoft.ContainerRegistry`, `Microsoft.App`, `Microsoft.OperationalInsights`) — takes ~2 min each.
+- [001](../docs/decisions/001-azure-over-flyio.md) — Azure Container Apps over Fly.io
+- [002](../docs/decisions/002-smb-incompatibility-tmp-pattern.md) — SMB incompatibility: all runtime I/O must use /tmp
+- [003](../docs/decisions/003-conversation-history-sqlite-tmp.md) — Conversation history: SQLite in /tmp
+- [004](../docs/decisions/004-start-sh-palace-copy-pattern.md) — start.sh: copy palace from Azure Files to /tmp at startup
+- [005](../docs/decisions/005-palace-sync-flow.md) — Palace sync flow: local mine → Azure Files → container restart
+- [006](../docs/decisions/006-chromadb-model-prewarm.md) — ChromaDB model must be pre-warmed in Docker image
+- [007](../docs/decisions/007-vscode-primary-interface.md) — VS Code (Diarmuid agent) is the primary interface
+- [008](../docs/decisions/008-mempalace-snapshot-not-live.md) — MemPalace is a snapshot index, not a live journal
+- [009](../docs/decisions/009-session-end-wrap-up-convention.md) — Session end convention: "wrap up"
+- [010](../docs/decisions/010-llm-backend-gpt4o-to-claude.md) — LLM: GPT-4o now, Claude Sonnet when Anthropic credits added
+- [011](../docs/decisions/011-acr-versioned-image-tags.md) — ACR: always use versioned image tags
+- [012](../docs/decisions/012-acr-managed-identity-acrpull.md) — ACR pull auth via managed identity + AcrPull role
 
 ## Open Items
 

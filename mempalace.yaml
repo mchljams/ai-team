@@ -1,5 +1,15 @@
 wing: ai_team
 rooms:
+- name: documentation
+  description: Files from docs/
+  keywords:
+  - documentation
+  - docs
+- name: bin
+  description: Files from bin/
+  keywords:
+  - bin
+  - bin
 - name: sessions
   description: Files from sessions/
   keywords:
@@ -20,6 +30,16 @@ rooms:
   keywords:
   - scripts
   - scripts
+- name: configuration
+  description: Files from infra/
+  keywords:
+  - configuration
+  - infra
+- name: planning
+  description: Files from requirements/
+  keywords:
+  - planning
+  - requirements
 - name: general
   description: Files that don't fit other rooms
   keywords: []
