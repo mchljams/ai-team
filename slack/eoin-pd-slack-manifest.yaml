@@ -24,10 +24,18 @@ oauth_config:
       - chat:write
       - chat:write.public
       - channels:history
+      - channels:read
       - im:history
       - im:write
+      - app_mentions:read
+
+event_subscriptions:
+  bot_events:
+    - app_mention
+    - message.channels
+    - message.im
 
 settings:
   org_deploy_enabled: false
-  socket_mode_enabled: false
+  socket_mode_enabled: true
   token_rotation_enabled: false

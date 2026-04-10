@@ -1,0 +1,25 @@
+wing: ai_team
+rooms:
+- name: sessions
+  description: Files from sessions/
+  keywords:
+  - sessions
+  - sessions
+- name: slack
+  description: Files from slack/
+  keywords:
+  - slack
+  - slack
+- name: personas
+  description: Files from personas/
+  keywords:
+  - personas
+  - personas
+- name: scripts
+  description: Files from scripts/
+  keywords:
+  - scripts
+  - scripts
+- name: general
+  description: Files that don't fit other rooms
+  keywords: []

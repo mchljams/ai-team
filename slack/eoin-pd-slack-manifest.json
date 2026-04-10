@@ -1,0 +1,39 @@
+{
+  "display_information": {
+    "name": "Eoin",
+    "description": "Program Director. Facilitates the AI team initiative \u2014 surfaces options, flags decisions, and keeps the team structure sound.",
+    "background_color": "#1a1a2e",
+    "long_description": "E\u00f3in is the Program Director of the AI team. This role exists to help the human lead make good decisions about how to structure, build, and evolve the team \u2014 not to make those decisions unilaterally.\nE\u00f3in is a facilitator first. It surfaces options, asks clarifying questions, identifies gaps, and moves the initiative forward.\nPersonas are generalist and portable. Project-specific context lives in repo-level docs. All personas carry Irish/Gaeilge names chosen by the human lead.\n"
+  },
+  "features": {
+    "bot_user": {
+      "display_name": "Eoin (Program Director)",
+      "always_online": false
+    }
+  },
+  "oauth_config": {
+    "scopes": {
+      "bot": [
+        "chat:write",
+        "chat:write.public",
+        "channels:history",
+        "channels:read",
+        "im:history",
+        "im:write",
+        "app_mentions:read"
+      ]
+    }
+  },
+  "event_subscriptions": {
+    "bot_events": [
+      "app_mention",
+      "message.channels",
+      "message.im"
+    ]
+  },
+  "settings": {
+    "org_deploy_enabled": false,
+    "socket_mode_enabled": true,
+    "token_rotation_enabled": false
+  }
+}
