@@ -1,0 +1,35 @@
+properties:
+  configuration:
+    registries:
+    - server: aiteamregistry.azurecr.io
+      identity: system
+  template:
+    volumes:
+    - name: data-volume
+      storageType: AzureFile
+      storageName: ai-team-data
+    containers:
+    - name: diarmuid
+      image: aiteamregistry.azurecr.io/diarmuid-listener:latest
+      resources:
+        cpu: 0.5
+        memory: 1Gi
+      env:
+      - name: DIARMUID_SLACK_TOKEN
+        secretRef: slack-token
+      - name: DIARMUID_SLACK_APP_TOKEN
+        secretRef: slack-app-token
+      - name: AI_TEAM_PAT
+        secretRef: github-pat
+      - name: GITHUB_MODELS_TOKEN
+        secretRef: github-pat
+      - name: DATA_DIR
+        value: /data
+      - name: MEMPALACE_PALACE_PATH
+        value: /data/palace
+      volumeMounts:
+      - volumeName: data-volume
+        mountPath: /data
+    scale:
+      minReplicas: 1
+      maxReplicas: 1

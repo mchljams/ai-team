@@ -8,6 +8,8 @@ Requires environment variables:
   DIARMUID_SLACK_APP_TOKEN  App-level token (xapp-...)
   GITHUB_MODELS_TOKEN       GitHub PAT with models:read scope
   AI_TEAM_PAT               GitHub PAT used by MCP server (create branches, PRs, etc.)
+  DATA_DIR                  Directory for SQLite DB + palace (default: .data/ in project root)
+                            In Azure Container Apps, mount Azure Files at /data and set DATA_DIR=/data
 
 Install dependencies:
   pip install slack-bolt aiohttp openai mempalace mcp
@@ -21,7 +23,7 @@ import asyncio
 import json
 import os
 import pathlib
-from collections import defaultdict
+import sqlite3
 from typing import Optional
 
 from openai import AsyncOpenAI
@@ -41,10 +43,10 @@ try:
         str(pathlib.Path(__file__).parent.parent / ".palace"),
     )
     MEMORY_ENABLED = True
-    print(f"MemPalace loaded from {PALACE_PATH}")
+    print(f"MemPalace loaded from {PALACE_PATH}", flush=True)
 except Exception as e:
     MEMORY_ENABLED = False
-    print(f"MemPalace not available: {e}")
+    print(f"MemPalace not available: {e}", flush=True)
 
 # ── Environment ────────────────────────────────────────────────────────────────
 SLACK_TOKEN = os.environ.get("DIARMUID_SLACK_TOKEN")
@@ -99,12 +101,55 @@ llm = AsyncOpenAI(
 )
 MODEL = "gpt-4o"
 
+# ── Persistent conversation history (SQLite) ─────────────────────────────────
+# SQLite is stored in /tmp (instance-local) to avoid SMB file-locking issues
+# with Azure Files. Long-term memory lives in the palace (Azure Files).
+DATA_DIR = pathlib.Path(os.environ.get("DATA_DIR", str(ROOT / ".data")))
+DATA_DIR.mkdir(parents=True, exist_ok=True)
+DB_PATH = pathlib.Path("/tmp/conversations.db")
+
+
+def _db_init() -> None:
+    with sqlite3.connect(DB_PATH, timeout=30) as conn:
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS conversations (
+                id         INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id    TEXT    NOT NULL,
+                role       TEXT    NOT NULL,
+                content    TEXT    NOT NULL,
+                created_at TEXT    NOT NULL DEFAULT (datetime('now'))
+            )
+        """)
+        conn.execute("CREATE INDEX IF NOT EXISTS idx_user ON conversations(user_id)")
+    print(f"Conversation DB ready at {DB_PATH}", flush=True)
+
+
+def _db_load_history(user_id: str, limit: int = 20) -> list:
+    with sqlite3.connect(DB_PATH, timeout=30) as conn:
+        rows = conn.execute(
+            """
+            SELECT role, content FROM (
+                SELECT role, content, id FROM conversations
+                WHERE user_id = ?
+                ORDER BY id DESC LIMIT ?
+            ) ORDER BY id ASC
+            """,
+            (user_id, limit),
+        ).fetchall()
+    return [{"role": row[0], "content": row[1]} for row in rows]
+
+
+def _db_save_message(user_id: str, role: str, content: str) -> None:
+    with sqlite3.connect(DB_PATH, timeout=30) as conn:
+        conn.execute(
+            "INSERT INTO conversations (user_id, role, content) VALUES (?, ?, ?)",
+            (user_id, role, content),
+        )
+
+
 # ── Global MCP state (populated at startup) ────────────────────────────────────
 openai_tools: list = []
 mcp_session: Optional[ClientSession] = None
-
-# ── Per-user conversation history (in-memory) ─────────────────────────────────
-conversation_history: dict = defaultdict(list)
 
 app = AsyncApp(token=SLACK_TOKEN)
 
@@ -166,14 +211,13 @@ async def call_mcp_tool(name: str, args: dict) -> str:
 # ── Core LLM + tool loop ───────────────────────────────────────────────────────
 
 async def ask_diarmuid(user_id: str, text: str) -> str:
-    history = conversation_history[user_id]
+    history = await asyncio.to_thread(_db_load_history, user_id)
 
     memory_context = await asyncio.to_thread(_recall_sync, text)
     augmented_text = f"{text}\n{memory_context}" if memory_context else text
-    history.append({"role": "user", "content": augmented_text})
 
-    # Build message list from system prompt + recent history (last 20 turns)
-    messages = [{"role": "system", "content": SYSTEM_PROMPT}] + history[-20:]
+    # Build message list from system prompt + recent history + new user message
+    messages = [{"role": "system", "content": SYSTEM_PROMPT}] + history + [{"role": "user", "content": augmented_text}]
 
     reply = ""
     while True:
@@ -217,7 +261,8 @@ async def ask_diarmuid(user_id: str, text: str) -> str:
             reply = choice.message.content or ""
             break
 
-    history.append({"role": "assistant", "content": reply})
+    await asyncio.to_thread(_db_save_message, user_id, "user", augmented_text)
+    await asyncio.to_thread(_db_save_message, user_id, "assistant", reply)
     await asyncio.to_thread(_file_to_palace_sync, user_id, text, reply)
     return reply
 
@@ -230,8 +275,12 @@ async def handle_mention(event, say):
         return
     user = event.get("user", "unknown")
     text = event.get("text", "")
-    reply = await ask_diarmuid(user, text)
-    await say(reply)
+    try:
+        reply = await ask_diarmuid(user, text)
+        await say(reply)
+    except Exception as e:
+        print(f"[ERROR] handle_mention failed for {user}: {e}", flush=True)
+        await say(f"Sorry, something went wrong: {e}")
 
 
 @app.event("message")
@@ -242,7 +291,12 @@ async def handle_message(event, say):
         return
     user = event.get("user", "unknown")
     text = event.get("text", "")
-    reply = await ask_diarmuid(user, text)
+    try:
+        reply = await ask_diarmuid(user, text)
+        await say(reply)
+    except Exception as e:
+        print(f"[ERROR] handle_message failed for {user}: {e}", flush=True)
+        await say(f"Sorry, something went wrong: {e}")
     await say(reply)
 
 
@@ -250,6 +304,8 @@ async def handle_message(event, say):
 
 async def main():
     global mcp_session, openai_tools
+
+    _db_init()
 
     mcp_binary = pathlib.Path(MCP_BINARY)
     if not mcp_binary.exists():
@@ -265,7 +321,7 @@ async def main():
         env={**os.environ, "GITHUB_PERSONAL_ACCESS_TOKEN": GITHUB_PAT or ""},
     )
 
-    print("Initialising GitHub MCP server...")
+    print("Initialising GitHub MCP server...", flush=True)
     async with stdio_client(server_params) as (read, write):
         async with ClientSession(read, write) as session:
             await session.initialize()
@@ -298,8 +354,8 @@ async def main():
                 for t in tools_result.tools
                 if t.name in ALLOWED_TOOLS
             ]
-            print(f"MCP ready — {len(openai_tools)} GitHub tools available (filtered from {len(tools_result.tools)})")
-            print("Diarmuid listener starting (Socket Mode + GitHub Models + MCP + MemPalace)...")
+            print(f"MCP ready — {len(openai_tools)} GitHub tools available (filtered from {len(tools_result.tools)})", flush=True)
+            print("Diarmuid listener starting (Socket Mode + GitHub Models + MCP + MemPalace)...", flush=True)
 
             handler = AsyncSocketModeHandler(app, SLACK_APP_TOKEN)
             await handler.start_async()
