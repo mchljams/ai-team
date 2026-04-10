@@ -7,7 +7,7 @@ Dev Lead session memory. Updated at the end of each working session.
 ## Current Status
 
 **Date:** 2026-04-10
-**Phase:** Slack listener live with LLM + MemPalace memory
+**Phase:** Azure Container Apps deployment complete — Diarmuid is always-on
 
 ---
 
@@ -27,6 +27,25 @@ Dev Lead session memory. Updated at the end of each working session.
 - MemPalace installed and initialised — palace at `.palace/`
 - 46 drawers mined from project files (personas, TEAM.md, sessions, manifests, scripts)
 - Listener augments every response with semantic palace recall — memory is live
+- GitHub MCP server integrated — 8 tools available (filtered from 41) for real GitHub operations
+- Palace re-mined — now at 56 drawers (up from 46)
+- Confirmed: conversation history is in-memory only (`defaultdict`) — lost on codespace sleep
+- Planning Azure persistence stack (see Key Decisions and Open Items)
+- **COMPLETED: Azure Container Apps deployment** — Diarmuid is now always-on in Azure
+  - Resource group: `ai-team-rg` (eastus)
+  - Storage account: `aiteamstorage001`, Azure Files share: `ai-team-data` (mounted at `/data`)
+  - Container Registry: `aiteamregistry.azurecr.io`
+  - Container App: `diarmuid`, current image `diarmuid-listener:v6`, min-replicas=1
+  - Palace: uploaded to Azure Files `ai-team-data/palace` (3.1MB, 83 drawers); copied to `/tmp/palace` at startup via `start.sh`
+  - SQLite conversation DB: `/tmp/conversations.db` (instance-local; palace captures long-term memory)
+  - Secrets stored in Container Apps: `DIARMUID_SLACK_TOKEN`, `DIARMUID_SLACK_APP_TOKEN`, `AI_TEAM_PAT`/`GITHUB_MODELS_TOKEN`
+  - Confirmed responding in Slack ✅
+- **v5/v6 fixes deployed**:
+  - v5: Pre-warmed ChromaDB embedding model (`all-MiniLM-L6-v2`, 79MB) in Dockerfile — was downloading per message
+  - v6: `scripts/start.sh` entrypoint copies palace from Azure Files `/data/palace` → `/tmp/palace` at startup before listener starts
+  - SMB incompatibility confirmed for both SQLite and ChromaDB — all runtime file I/O must use `/tmp`
+  - Palace (83 drawers, 3.1MB) uploaded to Azure Files share at `ai-team-data/palace`
+  - v6 startup confirmed: palace copied, `⚡️ Bolt app is running!`
 
 ## Key Decisions Made This Session
 
@@ -36,22 +55,44 @@ Dev Lead session memory. Updated at the end of each working session.
 - **MemPalace over flat session notes**: Palace is the deep searchable layer; session notes are the fast always-fresh layer — both kept for now
 - **GPT-4o over Claude**: Anthropic API requires paid credits (separate from Claude.ai subscription). Deferred — using GitHub Models free tier. Next step to become "the same Diarmuid" is to add Anthropic API credits and switch the listener to Claude 3.5 Sonnet
 - **Persistent Diarmuid roadmap**: Stage 1 (done) = palace + session notes; Stage 2 = SQLite conversation history; Stage 3 = Fly.io always-on; Stage 4 = unified backend
+- **Azure over Fly.io**: Switched target deployment from Fly.io to Azure Container Apps — better fit for persistent volume (Azure Files) to keep palace and conversation history alive across restarts/sleeps
+- **Azure persistence stack**:
+  - Azure Container Apps — always-on listener
+  - Azure Files share — mounted volume for `.palace/` (ChromaDB) and `conversations.db` (SQLite)
+  - Container Apps built-in secrets — for Slack tokens, GitHub PAT
+  - Conversation history: SQLite on shared volume (replaces in-memory `defaultdict`)
+- **Lost context problem**: Codespace sleep kills both the listener process and in-memory conversation history. Azure deployment solves this permanently.
+
+- **SMB incompatibility is broader than SQLite**: ChromaDB also fails on Azure Files SMB (lock patterns during search). All runtime file I/O (SQLite + ChromaDB) must use `/tmp`. Palace is treated as read-only at runtime — copied from Azure Files to `/tmp` at startup, never written back.
+- **`start.sh` pattern**: Entrypoint script copies palace from `/data/palace` (Azure Files) → `/tmp/palace`, sets `MEMPALACE_PALACE_PATH=/tmp/palace`, then execs the listener. Solves SMB locking for ChromaDB permanently.
+- **ChromaDB embedding model pre-warm**: `all-MiniLM-L6-v2` (79MB) must be baked into Docker image — add `RUN python3 -c "from chromadb.utils.embedding_functions import DefaultEmbeddingFunction; DefaultEmbeddingFunction()([\"\"])"` to Dockerfile. Without this it downloads on every container restart.
+- **Palace sync flow**: Local `mempalace mine` → upload to Azure Files with `az storage file upload-batch` → next container restart picks it up automatically via `start.sh` copy.
+- **SQLite on Azure Files — incompatible**: SMB file locking breaks SQLite. Solution: SQLite in `/tmp` (instance-local for session history), palace on Azure Files (persistent long-term memory). This is the right split.
+- **Azure image tagging**: Always use versioned tags (`:v1`, `:v2` etc.) not just `:latest` — Container Apps caches `latest` and won't pull a new image without a tag change.
+- **ACR + managed identity**: Container App system identity needs `AcrPull` role assigned on the registry before deployment will succeed.
+- **Resource provider registration**: Fresh Azure free trial needs all providers registered manually (`Microsoft.Storage`, `Microsoft.ContainerRegistry`, `Microsoft.App`, `Microsoft.OperationalInsights`) — takes ~2 min each.
 
 ## Open Items
 
-- Add Anthropic API credits → generate key → add as `ANTHROPIC_API_KEY` → switch listener to Claude Sonnet (this makes Slack "the same Diarmuid")
+- Add Anthropic API credits → generate key → add as `ANTHROPIC_API_KEY` → switch listener to Claude Sonnet
 - Apply updated manifests for Eóin's bot when ready
 - Set up Eóin listener when needed
-- Consider Fly.io deployment for always-on listener (deferred)
-- Re-mine palace after significant updates (`MEMPALACE_PALACE_PATH=/workspaces/ai-team/.palace mempalace mine /workspaces/ai-team --wing ai_team --agent diarmuid`)
+- Consider automated `mempalace mine` on a schedule inside the container
+- After each significant session: re-mine palace locally and upload to Azure Files (keeps Diarmuid's long-term memory current)
 
 ## Notes
 
-- Listener start command: `export GITHUB_MODELS_TOKEN=$AI_TEAM_PAT && MEMPALACE_PALACE_PATH=/workspaces/ai-team/.palace python3 scripts/diarmuid-listener.py`
+- **Codespace listener no longer needed** — Diarmuid runs from Azure Container Apps permanently
+- Azure Container App: `diarmuid` in `ai-team-rg`, eastus, image `aiteamregistry.azurecr.io/diarmuid-listener:v6`
+- To update Diarmuid: build new image, push to ACR with new version tag, `az containerapp update --name diarmuid --resource-group ai-team-rg --image aiteamregistry.azurecr.io/diarmuid-listener:vN`
+- To check logs: `az containerapp logs show --name diarmuid --resource-group ai-team-rg --tail 50`
+- To sync palace to Azure after re-mining:
+  ```bash
+  STORAGE_KEY=$(az storage account keys list --account-name aiteamstorage001 --resource-group ai-team-rg --query "[0].value" -o tsv)
+  az storage file upload-batch --account-name aiteamstorage001 --account-key "$STORAGE_KEY" --destination "ai-team-data/palace" --source /workspaces/ai-team/.palace/
+  ```
 - Eóin does not have repo access — session memory is Diarmuid-only for now
-- The `#general` channel must exist in Slack before `test-slack-bots.sh` will succeed
 - Socket Mode requires an App-Level Token (`xapp-...`) with `connections:write` scope — named `diarmuid-socket` in Slack
 - Listener responds to DMs automatically; in channels responds to @mentions only
 - Claude API requires paid credits (separate from Claude.ai subscription) — deferred, using GPT-4o free tier
 - Anthropic models not available on GitHub Models endpoint
-- The Slack bot is GPT-4o reasoning through the Diarmuid persona — same character, different engine. Switching to Claude Sonnet on Anthropic API would make it genuinely the same model as VS Code Copilot

@@ -1,0 +1,7 @@
+.git
+.palace
+.data
+__pycache__
+*.pyc
+*.pyo
+.env
