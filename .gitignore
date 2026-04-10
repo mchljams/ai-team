@@ -1,0 +1,5 @@
+# Test scripts with local execution context
+scripts/test-*.sh
+
+# MemPalace ChromaDB storage (re-mineable from source)
+.palace/
