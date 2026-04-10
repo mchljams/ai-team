@@ -1,0 +1,10 @@
+// .devcontainer/devcontainer.json
+{
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "GitHub.copilot-chat"
+      ]
+    }
+  }
+}
