@@ -68,6 +68,9 @@ PERSONA = (ROOT / "personas" / "DevLead.md").read_text()
 TEAM = (ROOT / "TEAM.md").read_text()
 SESSION = (ROOT / "sessions" / "diarmuid-session.md").read_text()
 
+# Truncate SESSION to most recent 4000 chars to avoid exceeding token limits
+_SESSION_EXCERPT = SESSION[-4000:] if len(SESSION) > 4000 else SESSION
+
 SYSTEM_PROMPT = f"""{PERSONA}
 
 ---
@@ -78,9 +81,9 @@ SYSTEM_PROMPT = f"""{PERSONA}
 
 ---
 
-## Session Notes
+## Session Notes (most recent excerpt)
 
-{SESSION}
+{_SESSION_EXCERPT}
 
 ---
 
@@ -124,7 +127,7 @@ def _db_init() -> None:
     print(f"Conversation DB ready at {DB_PATH}", flush=True)
 
 
-def _db_load_history(user_id: str, limit: int = 20) -> list:
+def _db_load_history(user_id: str, limit: int = 8) -> list:
     with sqlite3.connect(DB_PATH, timeout=30) as conn:
         rows = conn.execute(
             """
@@ -160,11 +163,11 @@ def _recall_sync(query: str) -> str:
     if not MEMORY_ENABLED:
         return ""
     try:
-        results = search_memories(query=query, palace_path=PALACE_PATH, n_results=3)
+        results = search_memories(query=query, palace_path=PALACE_PATH, n_results=2)
         if not results:
             return ""
         snippets = [
-            f"[{r.get('wing','')}/{r.get('room','')}] {r.get('document','')[:300]}"
+            f"[{r.get('wing','')}/{r.get('room','')}] {r.get('document','')[:200]}"
             for r in results
         ]
         return "\n\n---\nRelevant memory:\n" + "\n\n".join(snippets)
