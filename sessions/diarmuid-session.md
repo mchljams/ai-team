@@ -7,7 +7,7 @@ Dev Lead session memory. Updated at the end of each working session.
 ## Current Status
 
 **Date:** 2026-04-10
-**Phase:** Azure Container Apps deployment complete — Diarmuid is always-on
+**Phase:** VS Code Diarmuid agent created — primary interface established
 
 ---
 
@@ -31,6 +31,9 @@ Dev Lead session memory. Updated at the end of each working session.
 - Palace re-mined — now at 56 drawers (up from 46)
 - Confirmed: conversation history is in-memory only (`defaultdict`) — lost on codespace sleep
 - Planning Azure persistence stack (see Key Decisions and Open Items)
+- **v7 deployed**: Fixed 413 token overflow — session notes truncated to last 4000 chars, history limit 20→8, palace recall reduced
+- **Diarmuid VS Code agent created**: `.github/agents/Diarmuid.agent.md` — select from agent picker to use Diarmuid as primary interface in VS Code
+- Palace re-mined to 87 drawers and synced to Azure Files
 - **COMPLETED: Azure Container Apps deployment** — Diarmuid is now always-on in Azure
   - Resource group: `ai-team-rg` (eastus)
   - Storage account: `aiteamstorage001`, Azure Files share: `ai-team-data` (mounted at `/data`)
@@ -63,6 +66,9 @@ Dev Lead session memory. Updated at the end of each working session.
   - Conversation history: SQLite on shared volume (replaces in-memory `defaultdict`)
 - **Lost context problem**: Codespace sleep kills both the listener process and in-memory conversation history. Azure deployment solves this permanently.
 
+- **VS Code is the primary interface for doing work**: Slack is for async/away status checks only. VS Code Diarmuid agent has full tool access, no token limits, and reads session notes at start of each session for full context continuity.
+- **MemPalace is a snapshot index, not a live journal**: `mempalace mine` reads files and builds a searchable vector index. It does not passively record conversations. It only knows what was in files at the time of last `mine` run. Sessions notes + periodic mine is the right pattern.
+- **Session end convention**: Say "wrap up" — Diarmuid updates session notes, re-mines palace, uploads to Azure Files, commits. This is what makes the next session start clean.
 - **SMB incompatibility is broader than SQLite**: ChromaDB also fails on Azure Files SMB (lock patterns during search). All runtime file I/O (SQLite + ChromaDB) must use `/tmp`. Palace is treated as read-only at runtime — copied from Azure Files to `/tmp` at startup, never written back.
 - **`start.sh` pattern**: Entrypoint script copies palace from `/data/palace` (Azure Files) → `/tmp/palace`, sets `MEMPALACE_PALACE_PATH=/tmp/palace`, then execs the listener. Solves SMB locking for ChromaDB permanently.
 - **ChromaDB embedding model pre-warm**: `all-MiniLM-L6-v2` (79MB) must be baked into Docker image — add `RUN python3 -c "from chromadb.utils.embedding_functions import DefaultEmbeddingFunction; DefaultEmbeddingFunction()([\"\"])"` to Dockerfile. Without this it downloads on every container restart.
@@ -74,9 +80,10 @@ Dev Lead session memory. Updated at the end of each working session.
 
 ## Open Items
 
-- Add Anthropic API credits → generate key → add as `ANTHROPIC_API_KEY` → switch listener to Claude Sonnet
+- **Next session priority**: Create Eóin VS Code agent + start writing requirements with Eóin
+- Add Anthropic API credits → generate key → add as `ANTHROPIC_API_KEY` → switch Slack listener to Claude Sonnet (removes 8k token limit permanently)
 - Apply updated manifests for Eóin's bot when ready
-- Set up Eóin listener when needed
+- Set up Eóin Slack listener when needed
 - Consider automated `mempalace mine` on a schedule inside the container
 - After each significant session: re-mine palace locally and upload to Azure Files (keeps Diarmuid's long-term memory current)
 
